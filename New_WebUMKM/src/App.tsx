@@ -1,4 +1,3 @@
-// App.tsx
 import { useState, useEffect } from 'react';
 import { LandingPage } from './components/LandingPage';
 import { AuthPage } from './components/AuthPage';
@@ -69,26 +68,11 @@ function AppContent() {
   const { products, sales, purchases, finances } = useData();
   const [currentPage, setCurrentPage] = useState<Page>('landing');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
 
   // AI State Management
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | number | null>(null);
   const [radarData, setRadarData] = useState<RadarData>({ hasData: false });
-
-  // Check if mobile
-  useEffect(() => {
-    const checkIfMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
-    checkIfMobile();
-    window.addEventListener('resize', checkIfMobile);
-
-    return () => {
-      window.removeEventListener('resize', checkIfMobile);
-    };
-  }, []);
 
   // Convert products to InventoryItem format for AI
   const inventoryData: InventoryItem[] = products.map(p => ({
@@ -212,7 +196,7 @@ function AppContent() {
         user={currentUser}
         onLogout={handleLogout}
       />
-      <main className={`flex-1 transition-all duration-300 ${isMobile ? 'ml-0' : 'ml-64'}`}>
+      <main className="flex-1 ml-64">
         {currentPage === 'dashboard' && <Dashboard user={currentUser} onNavigate={setCurrentPage} />}
         {currentPage === 'inventory' && <InventoryPage />}
         {currentPage === 'sales' && <SalesPage />}
