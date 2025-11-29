@@ -391,7 +391,6 @@ export const AIChat: React.FC<AIChatProps> = ({
                                 <div className="mb-3 rounded-lg overflow-hidden border border-gray-300 relative group cursor-pointer" onClick={() => { setViewImage(m.image || null); setZoomLevel(1); }}>
                                     <img src={m.image} alt="Uploaded content" className="w-full max-h-60 object-cover" />
                                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                        <div className="text-white text-xs bg-black/70 px-2 py-1 rounded flex items-center gap-1"><IconZoom /> Perbesar</div>
                                     </div>
                                 </div>
                             )}
