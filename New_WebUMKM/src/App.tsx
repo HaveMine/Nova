@@ -13,6 +13,7 @@ import { KnowledgeCenter } from './components/KnowledgeCenter';
 import { Sidebar } from './components/Sidebar';
 import { DataProvider, useData } from './lib/dataContext';
 
+// ... (Type definitions tetap sama, tidak perlu diubah) ...
 export type User = {
   id: string;
   name: string;
@@ -69,8 +70,6 @@ function AppContent() {
   const { products, sales, purchases, finances } = useData();
   const [currentPage, setCurrentPage] = useState<Page>('landing');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-
-  // State untuk kontrol Sidebar Mobile
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // AI State Management
@@ -78,7 +77,6 @@ function AppContent() {
   const [currentSessionId, setCurrentSessionId] = useState<string | number | null>(null);
   const [radarData, setRadarData] = useState<RadarData>({ hasData: false });
 
-  // Convert products to InventoryItem format for AI
   const inventoryData: InventoryItem[] = products.map(p => ({
     id: p.id,
     name: p.name,
@@ -86,7 +84,6 @@ function AppContent() {
     price: p.price
   }));
 
-  // Load sessions from localStorage
   useEffect(() => {
     const saved = localStorage.getItem('umkm_sessions_v1');
     if (saved) {
@@ -98,12 +95,10 @@ function AppContent() {
     }
   }, []);
 
-  // Save sessions to localStorage
   useEffect(() => {
     localStorage.setItem('umkm_sessions_v1', JSON.stringify(sessions));
   }, [sessions]);
 
-  // Initialize first chat session if none exist
   useEffect(() => {
     if (sessions.length === 0) {
       createNewChat();
@@ -151,7 +146,6 @@ function AppContent() {
   };
 
   const handleLogin = (email: string, password: string) => {
-    // Mock login - in production this would call an API
     const mockUser: User = {
       id: '1',
       name: 'Budi Santoso',
@@ -164,7 +158,6 @@ function AppContent() {
   };
 
   const handleRegister = (name: string, email: string, companyName: string, password: string) => {
-    // Mock register
     const mockUser: User = {
       id: '1',
       name: name,
@@ -181,7 +174,6 @@ function AppContent() {
     setCurrentPage('landing');
   };
 
-  // Render auth pages or landing
   if (!currentUser) {
     if (currentPage === 'landing') {
       return <LandingPage onNavigate={setCurrentPage} />;
@@ -191,66 +183,77 @@ function AppContent() {
 
   const currentSession = sessions.find(s => s.id === currentSessionId) || null;
 
-  // Render main app with sidebar
   return (
+    // Container Utama: Flex Row
     <div className="flex h-screen bg-gray-50 overflow-hidden relative">
       
-      {/* 1. OVERLAY (Hanya Mobile) - Gelap di belakang menu */}
+      {/* 1. Mobile Overlay (Background Gelap saat menu buka di HP) */}
       {isSidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
-      {/* 2. SIDEBAR WRAPPER */}
-      <div className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white transform transition-transform duration-300 ease-in-out
-        md:static md:translate-x-0
+      {/* 2. SIDEBAR CONTAINER */}
+      {/* - Mobile: Fixed position, z-50, geser-geser (transform).
+         - Desktop: Static position (ikut flow flex), shrink-0 (biar ga kegencet), translate-0 (selalu tampil).
+      */}
+      <aside className={`
+        fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white shadow-xl
+        transition-transform duration-300 ease-in-out
+        md:static md:translate-x-0 md:shadow-none md:shrink-0
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
-        {/* Render Sidebar Komponen */}
-        <Sidebar
-          currentPage={currentPage}
-          onNavigate={(page) => {
-            setCurrentPage(page);
-            setIsSidebarOpen(false); // Tutup sidebar saat menu diklik di HP
-          }}
-          user={currentUser}
-          onLogout={handleLogout}
-        />
+        {/* Wrapper Relatif untuk menampung Tombol Close */}
+        <div className="h-full relative flex flex-col">
+          
+          {/* TOMBOL CLOSE (Hanya Mobile) */}
+          {/* Menggunakan Absolute di pojok kanan atas DALAM sidebar, dengan z-index tinggi */}
+          <div className="md:hidden absolute top-4 right-4 z-[999]">
+             <button 
+               onClick={(e) => {
+                 e.stopPropagation();
+                 setIsSidebarOpen(false);
+               }}
+               className="p-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 border border-slate-700 shadow-md"
+             >
+               <X size={20} />
+             </button>
+          </div>
 
-        {/* TOMBOL X (CLOSE) - Diposisikan Absolute di atas Sidebar */}
-        <button 
-          onClick={(e) => {
-            e.stopPropagation(); // Mencegah event bubbling
-            setIsSidebarOpen(false);
-          }}
-          className="absolute top-4 right-4 md:hidden p-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 z-[60] shadow-lg border border-slate-700 cursor-pointer"
-          aria-label="Tutup Menu"
-        >
-          <X size={20} />
-        </button>
-      </div>
+          {/* Render Komponen Sidebar */}
+          <Sidebar
+            currentPage={currentPage}
+            onNavigate={(page) => {
+              setCurrentPage(page);
+              setIsSidebarOpen(false);
+            }}
+            user={currentUser}
+            onLogout={handleLogout}
+          />
+        </div>
+      </aside>
 
-      {/* 3. MAIN CONTENT AREA */}
-      <main className="flex-1 flex flex-col h-full overflow-hidden w-full relative">
+      {/* 3. MAIN CONTENT */}
+      {/* flex-1: Mengisi sisa ruang setelah sidebar (di desktop) */}
+      <main className="flex-1 flex flex-col h-full overflow-hidden w-full min-w-0">
         
-        {/* HEADER MOBILE - Tombol Burger */}
-        <div className="md:hidden bg-white border-b p-4 flex items-center gap-3 shrink-0 sticky top-0 z-30">
+        {/* Mobile Header (Hamburger Menu) */}
+        <div className="md:hidden bg-white border-b p-4 flex items-center gap-3 shrink-0 sticky top-0 z-30 shadow-sm">
           <button 
             onClick={() => setIsSidebarOpen(true)}
-            className="p-2 -ml-2 hover:bg-gray-100 rounded-lg text-slate-700"
+            className="p-2 -ml-2 hover:bg-gray-100 rounded-lg text-slate-700 active:bg-gray-200"
           >
             <Menu size={24} />
           </button>
-          <span className="font-semibold text-slate-900 capitalize">
+          <span className="font-semibold text-slate-900 capitalize truncate">
             {currentPage.replace('-', ' ')}
           </span>
         </div>
 
-        {/* CONTENT SCROLL AREA - Dashboard ada di dalam sini */}
-        <div className="flex-1 overflow-y-auto">
+        {/* Content Scroll Area */}
+        <div className="flex-1 overflow-y-auto relative">
           {currentPage === 'dashboard' && <Dashboard user={currentUser} onNavigate={setCurrentPage} />}
           {currentPage === 'inventory' && <InventoryPage />}
           {currentPage === 'sales' && <SalesPage />}
