@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Menu, X } from 'lucide-react'; // Import Icon Menu & Close
+import { Menu, X } from 'lucide-react';
 import { LandingPage } from './components/LandingPage';
 import { AuthPage } from './components/AuthPage';
 import { Dashboard } from './components/Dashboard';
@@ -70,7 +70,7 @@ function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('landing');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  // State untuk Sidebar Mobile
+  // State untuk kontrol Sidebar Mobile
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // AI State Management
@@ -193,10 +193,9 @@ function AppContent() {
 
   // Render main app with sidebar
   return (
-    // Menggunakan h-screen dan overflow-hidden untuk layout aplikasi penuh
     <div className="flex h-screen bg-gray-50 overflow-hidden relative">
       
-      {/* 1. OVERLAY (Hanya Mobile) - Klik untuk tutup sidebar */}
+      {/* 1. OVERLAY (Hanya Mobile) - Gelap di belakang menu */}
       {isSidebarOpen && (
         <div 
           className="fixed inset-0 bg-black/50 z-40 md:hidden"
@@ -205,37 +204,40 @@ function AppContent() {
       )}
 
       {/* 2. SIDEBAR WRAPPER */}
-      {/* Di Mobile: Fixed position, geser masuk/keluar. Di Desktop: Static, selalu muncul */}
       <div className={`
         fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white transform transition-transform duration-300 ease-in-out
         md:static md:translate-x-0
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
-        {/* Tombol Close Tambahan untuk Mobile (Opsional, di dalam sidebar) */}
-        <div className="absolute top-2 right-2 md:hidden z-50">
-           <button onClick={() => setIsSidebarOpen(false)} className="p-2 text-gray-400 hover:text-white">
-             <X size={20} />
-           </button>
-        </div>
-
-        {/* Komponen Sidebar Asli */}
+        {/* Render Sidebar Komponen */}
         <Sidebar
           currentPage={currentPage}
           onNavigate={(page) => {
             setCurrentPage(page);
-            setIsSidebarOpen(false); // Tutup sidebar otomatis saat menu diklik (UX Mobile)
+            setIsSidebarOpen(false); // Tutup sidebar saat menu diklik di HP
           }}
           user={currentUser}
           onLogout={handleLogout}
         />
+
+        {/* TOMBOL X (CLOSE) - Diposisikan Absolute di atas Sidebar */}
+        <button 
+          onClick={(e) => {
+            e.stopPropagation(); // Mencegah event bubbling
+            setIsSidebarOpen(false);
+          }}
+          className="absolute top-4 right-4 md:hidden p-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 z-[60] shadow-lg border border-slate-700 cursor-pointer"
+          aria-label="Tutup Menu"
+        >
+          <X size={20} />
+        </button>
       </div>
 
       {/* 3. MAIN CONTENT AREA */}
-      {/* flex-1 agar mengisi sisa ruang, hapus ml-64 agar responsif */}
       <main className="flex-1 flex flex-col h-full overflow-hidden w-full relative">
         
-        {/* HEADER MOBILE (Hanya muncul di HP) */}
-        <div className="md:hidden bg-white border-b p-4 flex items-center gap-3 shrink-0">
+        {/* HEADER MOBILE - Tombol Burger */}
+        <div className="md:hidden bg-white border-b p-4 flex items-center gap-3 shrink-0 sticky top-0 z-30">
           <button 
             onClick={() => setIsSidebarOpen(true)}
             className="p-2 -ml-2 hover:bg-gray-100 rounded-lg text-slate-700"
@@ -247,7 +249,7 @@ function AppContent() {
           </span>
         </div>
 
-        {/* CONTENT SCROLL AREA */}
+        {/* CONTENT SCROLL AREA - Dashboard ada di dalam sini */}
         <div className="flex-1 overflow-y-auto">
           {currentPage === 'dashboard' && <Dashboard user={currentUser} onNavigate={setCurrentPage} />}
           {currentPage === 'inventory' && <InventoryPage />}
