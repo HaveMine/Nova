@@ -1,5 +1,5 @@
+// App.tsx
 import { useState, useEffect } from 'react';
-import { Menu, X } from 'lucide-react';
 import { LandingPage } from './components/LandingPage';
 import { AuthPage } from './components/AuthPage';
 import { Dashboard } from './components/Dashboard';
@@ -13,7 +13,6 @@ import { KnowledgeCenter } from './components/KnowledgeCenter';
 import { Sidebar } from './components/Sidebar';
 import { DataProvider, useData } from './lib/dataContext';
 
-// ... (Type definitions tetap sama, tidak perlu diubah) ...
 export type User = {
   id: string;
   name: string;
@@ -70,13 +69,28 @@ function AppContent() {
   const { products, sales, purchases, finances } = useData();
   const [currentPage, setCurrentPage] = useState<Page>('landing');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   // AI State Management
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | number | null>(null);
   const [radarData, setRadarData] = useState<RadarData>({ hasData: false });
 
+  // Check if mobile
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkIfMobile();
+    window.addEventListener('resize', checkIfMobile);
+
+    return () => {
+      window.removeEventListener('resize', checkIfMobile);
+    };
+  }, []);
+
+  // Convert products to InventoryItem format for AI
   const inventoryData: InventoryItem[] = products.map(p => ({
     id: p.id,
     name: p.name,
@@ -84,6 +98,7 @@ function AppContent() {
     price: p.price
   }));
 
+  // Load sessions from localStorage
   useEffect(() => {
     const saved = localStorage.getItem('umkm_sessions_v1');
     if (saved) {
@@ -95,10 +110,12 @@ function AppContent() {
     }
   }, []);
 
+  // Save sessions to localStorage
   useEffect(() => {
     localStorage.setItem('umkm_sessions_v1', JSON.stringify(sessions));
   }, [sessions]);
 
+  // Initialize first chat session if none exist
   useEffect(() => {
     if (sessions.length === 0) {
       createNewChat();
@@ -146,6 +163,7 @@ function AppContent() {
   };
 
   const handleLogin = (email: string, password: string) => {
+    // Mock login - in production this would call an API
     const mockUser: User = {
       id: '1',
       name: 'Budi Santoso',
@@ -158,6 +176,7 @@ function AppContent() {
   };
 
   const handleRegister = (name: string, email: string, companyName: string, password: string) => {
+    // Mock register
     const mockUser: User = {
       id: '1',
       name: name,
@@ -174,6 +193,7 @@ function AppContent() {
     setCurrentPage('landing');
   };
 
+  // Render auth pages or landing
   if (!currentUser) {
     if (currentPage === 'landing') {
       return <LandingPage onNavigate={setCurrentPage} />;
@@ -183,97 +203,35 @@ function AppContent() {
 
   const currentSession = sessions.find(s => s.id === currentSessionId) || null;
 
+  // Render main app with sidebar
   return (
-    // Container Utama: Flex Row
-    <div className="flex h-screen bg-gray-50 overflow-hidden relative">
-      
-      {/* 1. Mobile Overlay (Background Gelap saat menu buka di HP) */}
-      {isSidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
-
-      {/* 2. SIDEBAR CONTAINER */}
-      {/* - Mobile: Fixed position, z-50, geser-geser (transform).
-         - Desktop: Static position (ikut flow flex), shrink-0 (biar ga kegencet), translate-0 (selalu tampil).
-      */}
-      <aside className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white shadow-xl
-        transition-transform duration-300 ease-in-out
-        md:static md:translate-x-0 md:shadow-none md:shrink-0
-        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-      `}>
-        {/* Wrapper Relatif untuk menampung Tombol Close */}
-        <div className="h-full relative flex flex-col">
-          
-          {/* TOMBOL CLOSE (Hanya Mobile) */}
-          {/* Menggunakan Absolute di pojok kanan atas DALAM sidebar, dengan z-index tinggi */}
-          <div className="md:hidden absolute top-4 right-4 z-[999]">
-             <button 
-               onClick={(e) => {
-                 e.stopPropagation();
-                 setIsSidebarOpen(false);
-               }}
-               className="p-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 border border-slate-700 shadow-md"
-             >
-               <X size={20} />
-             </button>
-          </div>
-
-          {/* Render Komponen Sidebar */}
-          <Sidebar
-            currentPage={currentPage}
-            onNavigate={(page) => {
-              setCurrentPage(page);
-              setIsSidebarOpen(false);
-            }}
-            user={currentUser}
-            onLogout={handleLogout}
+    <div className="flex min-h-screen bg-gray-50">
+      <Sidebar
+        currentPage={currentPage}
+        onNavigate={setCurrentPage}
+        user={currentUser}
+        onLogout={handleLogout}
+      />
+      <main className={`flex-1 transition-all duration-300 ${isMobile ? 'ml-0' : 'ml-64'}`}>
+        {currentPage === 'dashboard' && <Dashboard user={currentUser} onNavigate={setCurrentPage} />}
+        {currentPage === 'inventory' && <InventoryPage />}
+        {currentPage === 'sales' && <SalesPage />}
+        {currentPage === 'purchases' && <PurchasesPage />}
+        {currentPage === 'finance' && <FinancePage />}
+        {currentPage === 'automation' && <AutomationBuilder />}
+        {currentPage === 'ai-insights' && (
+          <AIInsightsDashboard
+            inventoryData={inventoryData}
+            radarData={radarData}
+            sales={sales}
+            purchases={purchases}
+            finances={finances}
+            currentSession={currentSession}
+            onSendMessage={handleSendMessage}
+            sessions={sessions}
           />
-        </div>
-      </aside>
-
-      {/* 3. MAIN CONTENT */}
-      {/* flex-1: Mengisi sisa ruang setelah sidebar (di desktop) */}
-      <main className="flex-1 flex flex-col h-full overflow-hidden w-full min-w-0">
-        
-        {/* Mobile Header (Hamburger Menu) */}
-        <div className="md:hidden bg-white border-b p-4 flex items-center gap-3 shrink-0 sticky top-0 z-30 shadow-sm">
-          <button 
-            onClick={() => setIsSidebarOpen(true)}
-            className="p-2 -ml-2 hover:bg-gray-100 rounded-lg text-slate-700 active:bg-gray-200"
-          >
-            <Menu size={24} />
-          </button>
-          <span className="font-semibold text-slate-900 capitalize truncate">
-            {currentPage.replace('-', ' ')}
-          </span>
-        </div>
-
-        {/* Content Scroll Area */}
-        <div className="flex-1 overflow-y-auto relative">
-          {currentPage === 'dashboard' && <Dashboard user={currentUser} onNavigate={setCurrentPage} />}
-          {currentPage === 'inventory' && <InventoryPage />}
-          {currentPage === 'sales' && <SalesPage />}
-          {currentPage === 'purchases' && <PurchasesPage />}
-          {currentPage === 'finance' && <FinancePage />}
-          {currentPage === 'automation' && <AutomationBuilder />}
-          {currentPage === 'ai-insights' && (
-            <AIInsightsDashboard
-              inventoryData={inventoryData}
-              radarData={radarData}
-              sales={sales}
-              purchases={purchases}
-              finances={finances}
-              currentSession={currentSession}
-              onSendMessage={handleSendMessage}
-              sessions={sessions}
-            />
-          )}
-          {currentPage === 'knowledge' && <KnowledgeCenter />}
-        </div>
+        )}
+        {currentPage === 'knowledge' && <KnowledgeCenter />}
       </main>
     </div>
   );
